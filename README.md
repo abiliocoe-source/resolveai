@@ -36,6 +36,16 @@ flowchart TD
   S --> UI[Streamlit: chat, history, sources, review, admin]
 ```
 
+## Design
+Metaphor: a service counter with queue tickets (`assets/style.css`, `ui.py`; fonts Archivo Black + Atkinson Hyperlegible). Applied decisions: every case is a numbered ticket (A-001...); three zones (conversation, sources, case details); the cited sentence is highlighted in yellow with a match-score chip tied to its source; a fixed strip keeps DEMO MODE visible on every screen. Statuses always carry a glyph and words, not only color.
+
+| Desktop 1440 px | Mobile 390 px |
+|---|---|
+| ![desktop](docs/screenshots/desktop-1440-top.jpg) | ![mobile](docs/screenshots/mobile-390-top.jpg) |
+| ![dashboard](docs/screenshots/desktop-1440-dashboard.jpg) | ![mobile sources](docs/screenshots/mobile-390-detail.jpg) |
+
+Screenshots were taken in Chrome with the app embedded at exactly 1440 and 390 px wide (the browser window itself could not be shrunk). No horizontal page scroll was measured at 390 px. The match-score bands (strong/medium/weak) are a UI rule of thumb. Keyboard focus and screen readers were not tested with assistive technology.
+
 ## Run
 ```bash
 pip install -r requirements.txt
@@ -68,7 +78,7 @@ Categories: 12 normal, 5 ambiguous, 5 unanswerable, 4 out-of-scope, 6 prompt-inj
 **Caveat:** the cases were written by the same developer, so scores are optimistic; grounding is high partly by construction because answers are extractive. The LLM path is not evaluated (no API key available).
 
 ## Limitations
-Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was checked in Chrome at desktop width only (no mobile-width check) and with Streamlit headless tests; no authentication on the review/admin tabs.
+Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was checked in Chrome at 1440 and 390 px (screenshots above) and with Streamlit headless tests; no authentication on the review/admin tabs.
 
 ## Next steps
 Embedding retrieval compared on this eval set, paraphrased test cases written by someone else, Portuguese knowledge base, agent authentication.

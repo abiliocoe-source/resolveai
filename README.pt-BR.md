@@ -36,6 +36,16 @@ flowchart TD
   S --> UI[Streamlit: chat, histórico, fontes, revisão, admin]
 ```
 
+## Design
+Metáfora: balcão de atendimento com senhas de fila (`assets/style.css`, `ui.py`; fontes Archivo Black + Atkinson Hyperlegible). Decisões aplicadas: cada caso é uma senha numerada (A-001...); três zonas (conversa, fontes, detalhes do caso); a frase citada fica destacada em amarelo, com um chip de pontuação ligado à fonte; uma faixa fixa mantém o MODO DEMO visível em todas as telas. Os estados sempre trazem glifo e texto, não só cor.
+
+| Desktop 1440 px | Celular 390 px |
+|---|---|
+| ![desktop](docs/screenshots/desktop-1440-top.jpg) | ![celular](docs/screenshots/mobile-390-top.jpg) |
+| ![painel](docs/screenshots/desktop-1440-dashboard.jpg) | ![fontes no celular](docs/screenshots/mobile-390-detail.jpg) |
+
+As capturas foram feitas no Chrome com o app incorporado em exatamente 1440 e 390 px de largura (a janela do navegador não pôde ser reduzida). Em 390 px não foi medida rolagem horizontal da página. As faixas de pontuação (forte/média/fraca) são uma regra prática da interface. Foco de teclado e leitores de tela não foram testados com tecnologia assistiva.
+
 ## Execução
 ```bash
 pip install -r requirements.txt
@@ -68,7 +78,7 @@ LLM opcional: defina `LLM_API_KEY` (e `LLM_BASE_URL`, `LLM_MODEL`) como variáve
 **Ressalva:** os casos foram escritos pelo mesmo desenvolvedor, então os números são otimistas; a fundamentação é alta em parte por construção, pois as respostas são extrativas. O caminho com LLM não foi avaliado (sem chave de API).
 
 ## Limitações
-Recuperação lexical perde paráfrases; mensagens com vários temas são encaminhadas em vez de respondidas; só inglês; a UI foi conferida no Chrome só em largura de desktop (sem checagem em tela de celular) e com testes headless do Streamlit; sem autenticação nas abas de revisão/admin.
+Recuperação lexical perde paráfrases; mensagens com vários temas são encaminhadas em vez de respondidas; só inglês; a UI foi conferida no Chrome em 1440 e 390 px (capturas acima) e com testes headless do Streamlit; sem autenticação nas abas de revisão/admin.
 
 ## Próximos passos
 Recuperação por embeddings comparada neste mesmo conjunto, casos parafraseados por outra pessoa, base em português, autenticação de atendentes.
