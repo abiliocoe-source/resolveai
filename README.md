@@ -37,14 +37,15 @@ flowchart TD
 ```
 
 ## Design
-Metaphor: a service counter with queue tickets (`assets/style.css`, `ui.py`; fonts Archivo Black + Atkinson Hyperlegible). Applied decisions: every case is a numbered ticket (A-001...); three zones (conversation, sources, case details); the cited sentence is highlighted in yellow with a match-score chip tied to its source; a fixed strip keeps DEMO MODE visible on every screen. Statuses always carry a glyph and words, not only color.
+Art direction (taste-skill style `accent-ladder` with the project's own brand kept, applied inside Streamlit): a support queue at a service counter. Every case is a numbered yellow ticket (A-007); the screen is the inbox pattern, with the case list, the open case (question, answer, then the passages behind it) and a details column. The cited sentence is highlighted and carries a match-score chip tied to its source; the full passage opens below it. A quiet strip keeps **Demo mode** visible on every screen. Statuses are words in pale pills (Answered, No source found, Passed to an agent), never colour alone. Type is Atkinson Hyperlegible, with Archivo Black only on the ticket number.
 
-| Desktop 1440 px | Mobile 390 px |
+| Before | After |
 |---|---|
-| ![desktop](docs/screenshots/desktop-1440-top.jpg) | ![mobile](docs/screenshots/mobile-390-top.jpg) |
-| ![dashboard](docs/screenshots/desktop-1440-dashboard.jpg) | ![mobile sources](docs/screenshots/mobile-390-detail.jpg) |
+| ![before](docs/screenshots/before/desktop-1440-top.jpg) | ![after](docs/screenshots/after/desktop-1440-queue.jpg) |
+| ![before mobile](docs/screenshots/before/mobile-390-top.jpg) | ![after mobile](docs/screenshots/after/mobile-390-queue.jpg) |
 
-Screenshots were taken in Chrome with the app embedded at exactly 1440 and 390 px wide (the browser window itself could not be shrunk). No horizontal page scroll was measured at 390 px. The match-score bands (strong/medium/weak) are a UI rule of thumb. Keyboard focus and screen readers were not tested with assistive technology.
+More: [sources with match scores](docs/screenshots/after/desktop-1440-sources.jpg), [sources on a phone](docs/screenshots/after/mobile-390-sources.jpg). No external images are used, so there is nothing to credit. The sample queue in the screenshots was made by running six questions through the real agent; one of them (A-001, "How long does a refund take?") shows the documented retrieval failure as "No source found".
+Checked with the skill's linter and inspector (0 FAIL, 0 WARN) and by eye in Chrome at 1440 and 390 px. The inspector was run on a copy with longer wait times so Streamlit could finish rendering. Match-score chips exist only for cases asked in the current browser session (the scores are not stored). On a phone the case list scrolls inside a fixed-height box above the open case. Keyboard use and screen readers were not tested with assistive technology.
 
 ## Run
 ```bash

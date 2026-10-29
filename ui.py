@@ -1,13 +1,13 @@
 """Presentation components for ResolveAI. Every dynamic value is escaped: messages and documents are untrusted."""
 import html
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
-STATUS = {"answered": ("✓", "Answered from sources"), "no_evidence": ("?", "No source found"),
-          "escalated": ("→", "Passed to an agent")}
+STATUS = {"answered": "Answered", "no_evidence": "No source found", "escalated": "Passed to an agent"}
 REVIEW = {"pending": "Waiting for an agent", "not_needed": "No review needed", "approved": "Approved",
           "corrected": "Corrected", "rejected": "Rejected"}
 
@@ -21,93 +21,117 @@ def inject_css() -> None:
 
 
 def mode_strip(llm_mode: bool) -> None:
-    """Fixed to the top of the window: the mode is never out of sight."""
+    """Fixed to the top of the window: the answer mode is never out of sight."""
     if llm_mode:
-        st.markdown("<div class='mode-strip llm'><span class='long'>LLM MODE · answers are written by the configured model from the "
-                    "sources and discarded if they cite anything else.</span><span class='short'>LLM MODE · sources only</span></div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div class='mode llm'><b>LLM mode</b><span class='long'>Answers come from the configured model and are discarded if they cite "
+                    "anything but the sources.</span><span class='short'>sources only</span></div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div class='mode-strip'><span class='long'>DEMO MODE · no LLM in use · every answer is copied word for word "
-                    "from the fictional FastBox policies.</span><span class='short'>DEMO MODE · no LLM · quotes only</span></div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div class='mode'><b>Demo mode</b><span class='long'>No LLM is connected. Every answer is copied word for word from the fictional "
+                    "FastBox policies.</span><span class='short'>no LLM, quotes only</span></div>", unsafe_allow_html=True)
 
 
-def brand() -> None:
-    st.markdown("<div class='brand'><span class='name'>RESOLVEAI</span>"
-                "<span class='sub'>Counter 1 · FastBox support, a fictional delivery company</span></div>", unsafe_allow_html=True)
+def brand(scope: str) -> None:
+    mark = ("<svg width='28' height='32' viewBox='0 0 28 32' aria-hidden='true'><path d='M2 4h24v24H2z' fill='#FFD23F'/>"
+            "<circle cx='2' cy='16' r='4' fill='#fff'/><circle cx='26' cy='16' r='4' fill='#fff'/>"
+            "<rect x='8' y='10' width='12' height='3' fill='#14201B'/><rect x='8' y='17' width='8' height='3' fill='#0E4D3A'/></svg>")
+    st.markdown(f"<div class='brand'>{mark}<div><div class='n'>ResolveAI</div><div class='s'>{esc(scope)}</div></div></div>", unsafe_allow_html=True)
 
 
-def zone(title: str) -> None:
-    st.markdown(f"<div class='zone-title'>{esc(title)}</div>", unsafe_allow_html=True)
+def waiting(n: int) -> None:
+    word = "case waits" if n == 1 else "cases wait"
+    st.markdown(f"<div class='waiting'><div class='v'>{n}</div><div class='l'>{word} for an agent</div></div>", unsafe_allow_html=True)
 
 
-def notice(kind: str, title: str, text: str) -> None:
-    st.markdown(f"<div class='notice {kind}'><b>{esc(title)}</b><br>{esc(text)}</div>", unsafe_allow_html=True)
+def title(h1: str, finding: str) -> None:
+    st.markdown(f"<div class='title'><h1>{esc(h1)}</h1><p>{finding}</p></div>", unsafe_allow_html=True)
 
 
-def senha(ticket_id: int, big: bool = False) -> str:
-    return f"<span class='senha{' big' if big else ''}'>A-{ticket_id:03d}</span>"
+def note(kind: str, title: str, text: str = "") -> None:
+    st.markdown(f"<div class='note {kind}'><b>{esc(title)}</b> {esc(text)}</div>", unsafe_allow_html=True)
 
 
-def seal_cat(intent: str) -> str:
-    return f"<span class='seal cat'>{esc(intent.replace('_', ' '))}</span>"
+def region(title: str, sub: str = "") -> None:
+    st.markdown(f"<div class='region-h'><h2>{esc(title)}</h2><span class='sub'>{esc(sub)}</span></div>", unsafe_allow_html=True)
 
 
-def seal_status(status: str) -> str:
-    glyph, label = STATUS[status]
-    return f"<span class='seal {status}'>{glyph} {label}</span>"
+def ago(iso: str) -> str:
+    """Time in words, as a queue shows it: 'now', '5 min', '3 h', or the date."""
+    try:
+        t = datetime.fromisoformat(iso)
+    except ValueError:
+        return iso
+    secs = (datetime.now(timezone.utc) - t).total_seconds()
+    if secs < 60:
+        return "now"
+    if secs < 3600:
+        return f"{int(secs // 60)} min"
+    if secs < 86400:
+        return f"{int(secs // 3600)} h"
+    return t.strftime("%d %b")
 
 
-def customer(t: dict) -> str:
-    return f"<div class='cust'>{esc(t['message'])}<br><small>{esc(t['created'][11:16])} UTC · personal data masked</small></div>"
+def stamp(iso: str) -> str:
+    try:
+        return datetime.fromisoformat(iso).strftime("%d %b, %H:%M UTC")
+    except ValueError:
+        return iso
 
 
-def answer(t: dict, selected: bool) -> str:
-    body = esc(t["answer"])
-    body = re.sub(r"\[(S\d+)\]", r"<sup class='cite'>\1</sup>", body)
-    return (f"<div class='ans{' sel' if selected else ''}'><div class='meta'>{senha(t['id'])}{seal_cat(t['intent'])}"
-            f"{seal_status(t['status'])}</div><div class='body'>{body}</div></div>")
+def row_label(t: dict) -> str:
+    """Two-line queue row: ticket, state and time; then what the customer asked."""
+    msg = t["message"] if len(t["message"]) <= 64 else t["message"][:63].rstrip() + "…"
+    return f"**A-{t['id']:03d}** · {STATUS[t['status']]} · {ago(t['created'])}  \n{msg}"
+
+
+def ticket(i: int, big: bool = False) -> str:
+    return f"<span class='tk{' big' if big else ''}'>A-{i:03d}</span>"
+
+
+def pills(t: dict) -> str:
+    return (f"<span class='pill cat'>{esc(t['intent'].replace('_', ' '))}</span>"
+            f"<span class='pill {t['status']}'>{esc(STATUS[t['status']])}</span>")
+
+
+def case_view(t: dict) -> str:
+    body = re.sub(r"\[(S\d+)\]", r"<sup class='cite'>\1</sup>", esc(t["answer"]))
+    return (f"<div class='case-h'>{ticket(t['id'])}{pills(t)}<span class='when'>{esc(ago(t['created']))} · {esc(t['created'][11:16])} UTC</span></div>"
+            f"<div class='said'>{esc(t['message'])}<small>Personal data was masked before saving.</small></div>"
+            f"<div class='reply'><div class='lbl'>Answer</div><div class='body'>{body}</div></div>")
 
 
 def score_chip(score) -> str:
-    """Retrieval score band. Bands are a UI heuristic (>=0.30 strong, >=0.15 medium), not a calibrated probability."""
+    """Retrieval score band: a UI rule of thumb (0.30 strong, 0.15 medium), not a calibrated probability."""
     if score is None:
         return ""
     band = "strong" if score >= 0.30 else "medium" if score >= 0.15 else "weak"
     return f"<span class='chip'>match score {score:.2f} · {band}</span>"
 
 
-def source_card(citation: dict, chunk_text: str, score) -> str:
-    quote = esc(citation["quote"])
+def source_card(c: dict, chunk_text: str, score) -> str:
+    quote = esc(c["quote"])
     full = esc(chunk_text).replace(quote, f"<mark>{quote}</mark>", 1)
-    return (f"<div class='src'><div class='head'>[{esc(citation['label'])}] {esc(citation['title'])} › {esc(citation['heading'])}</div>"
-            f"<div class='quote'><mark>{quote}</mark></div>{score_chip(score)}"
-            f"<details><summary>Read the full passage</summary><p>{full}</p><span class='chip'>{esc(citation['chunk_id'])}</span></details></div>")
+    return (f"<div class='src'><div class='h'>[{esc(c['label'])}] {esc(c['title'])} › {esc(c['heading'])}</div>"
+            f"<div class='q'><mark>{quote}</mark></div><div class='meta'>{score_chip(score)}</div>"
+            f"<details><summary>Read the full passage</summary><p>{full}</p></details></div>")
 
 
 def details(t: dict, result) -> str:
-    rows = ""
-    if result is not None and result.retrieved:
-        body = "".join(f"<tr><td>{esc(cid)}</td><td class='r'>{s:.3f}</td></tr>" for cid, s in result.retrieved)
-        rows = (f"<div class='tbl-wrap'><table class='tbl'><thead><tr><th>retrieved passage</th><th class='r'>score</th></tr></thead>"
-                f"<tbody>{body}</tbody></table></div>")
     rating = "not rated" if t["rating"] is None else ("helpful" if t["rating"] else "not helpful")
-    return (f"<div>{senha(t['id'], big=True)}</div><div style='margin:.6rem 0'>{seal_cat(t['intent'])} {seal_status(t['status'])}</div>"
+    rev = esc(REVIEW.get(t["review"], t["review"])) + (f", {esc(t['review_note'])}" if t["review_note"] else "")
+    table = ""
+    if result is not None and result.retrieved:
+        rows = "".join(f"<tr><td>{esc(cid)}</td><td class='r'>{s:.3f}</td></tr>" for cid, s in result.retrieved)
+        table = f"<table class='rt'><thead><tr><th>Passages retrieved</th><th class='r'>Score</th></tr></thead><tbody>{rows}</tbody></table>"
+    return (f"<div>{ticket(t['id'], big=True)}</div>"
             f"<dl class='dl'><dt>Reason</dt><dd>{esc(t['reason'] or 'none')}</dd><dt>Answer mode</dt><dd>{esc(t['mode'])}</dd>"
-            f"<dt>Agent review</dt><dd>{esc(REVIEW.get(t['review'], t['review']))}"
-            f"{' · ' + esc(t['review_note']) if t['review_note'] else ''}</dd><dt>User rating</dt><dd>{rating}</dd>"
-            f"<dt>Opened</dt><dd>{esc(t['created'].replace('T', ' '))} UTC</dd></dl>{rows}")
+            f"<dt>Agent review</dt><dd>{rev}</dd><dt>User rating</dt><dd>{rating}</dd><dt>Opened</dt><dd>{esc(stamp(t['created']))}</dd></dl>{table}")
+
+
+def kpi_strip(cells) -> str:
+    return "<div class='kpis'>" + "".join(f"<div class='kpi'><div class='l'>{esc(l)}</div><div class='v'>{v}<small>{esc(u)}</small></div></div>" for l, v, u in cells) + "</div>"
 
 
 def hbars(data: dict) -> str:
     top = max(data.values()) if data and max(data.values()) else 1
-    return "".join(f"<div class='hbar'><span>{esc(k.replace('_', ' '))}</span><div class='t'><i style='width:{v / top * 100:.0f}%'></i></div>"
-                   f"<span class='n'>{v}</span></div>" for k, v in data.items())
-
-
-def log_table(tickets) -> str:
-    rows = "".join(f"<tr><td>A-{t['id']:03d}</td><td>{esc(t['created'][5:16].replace('T', ' '))}</td><td>{esc(t['intent'].replace('_', ' '))}</td>"
-                   f"<td>{STATUS[t['status']][0]} {esc(STATUS[t['status']][1])}</td><td>{esc(REVIEW.get(t['review'], t['review']))}</td>"
-                   f"<td>{esc(t['message'][:90])}</td></tr>" for t in tickets)
-    head = "".join(f"<th>{h}</th>" for h in ["No.", "Opened (UTC)", "Category", "Status", "Review", "Message"])
-    return f"<div class='tbl-wrap'><table class='tbl'><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table></div>"
+    return "".join(f"<div class='hbar'><span>{esc(k.replace('_', ' '))}</span><div class='t'><i style='width:{v / top * 100:.0f}%'></i></div><span class='n'>{v}</span></div>"
+                   for k, v in data.items())

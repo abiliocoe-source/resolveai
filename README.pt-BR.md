@@ -37,14 +37,15 @@ flowchart TD
 ```
 
 ## Design
-Metáfora: balcão de atendimento com senhas de fila (`assets/style.css`, `ui.py`; fontes Archivo Black + Atkinson Hyperlegible). Decisões aplicadas: cada caso é uma senha numerada (A-001...); três zonas (conversa, fontes, detalhes do caso); a frase citada fica destacada em amarelo, com um chip de pontuação ligado à fonte; uma faixa fixa mantém o MODO DEMO visível em todas as telas. Os estados sempre trazem glifo e texto, não só cor.
+Direção de arte (estilo `accent-ladder` da taste-skill mantendo a marca do projeto, aplicado dentro do Streamlit): uma fila de atendimento de balcão. Cada caso é uma senha amarela numerada (A-007); a tela segue o padrão de caixa de entrada, com a lista de casos, o caso aberto (pergunta, resposta e depois as passagens por trás dela) e uma coluna de detalhes. A frase citada fica destacada e leva um chip de pontuação ligado à sua fonte; a passagem completa abre logo abaixo. Uma faixa discreta mantém o **Demo mode** visível em todas as telas. Os estados são palavras em selos pálidos (Answered, No source found, Passed to an agent), nunca só cor. A tipografia é Atkinson Hyperlegible, com Archivo Black apenas na senha.
 
-| Desktop 1440 px | Celular 390 px |
+| Antes | Depois |
 |---|---|
-| ![desktop](docs/screenshots/desktop-1440-top.jpg) | ![celular](docs/screenshots/mobile-390-top.jpg) |
-| ![painel](docs/screenshots/desktop-1440-dashboard.jpg) | ![fontes no celular](docs/screenshots/mobile-390-detail.jpg) |
+| ![antes](docs/screenshots/before/desktop-1440-top.jpg) | ![depois](docs/screenshots/after/desktop-1440-queue.jpg) |
+| ![antes celular](docs/screenshots/before/mobile-390-top.jpg) | ![depois celular](docs/screenshots/after/mobile-390-queue.jpg) |
 
-As capturas foram feitas no Chrome com o app incorporado em exatamente 1440 e 390 px de largura (a janela do navegador não pôde ser reduzida). Em 390 px não foi medida rolagem horizontal da página. As faixas de pontuação (forte/média/fraca) são uma regra prática da interface. Foco de teclado e leitores de tela não foram testados com tecnologia assistiva.
+Mais: [fontes com pontuação](docs/screenshots/after/desktop-1440-sources.jpg), [fontes no celular](docs/screenshots/after/mobile-390-sources.jpg). Não há imagens externas, então não há créditos. A fila de exemplo nas capturas foi feita passando seis perguntas pelo agente de verdade; uma delas (A-001, "How long does a refund take?") mostra a falha de recuperação documentada como "No source found".
+Conferido com o linter e o inspetor da skill (0 FAIL, 0 WARN) e a olho no Chrome em 1440 e 390 px. O inspetor rodou numa cópia com esperas maiores para o Streamlit terminar de renderizar. Os chips de pontuação só existem para casos perguntados na sessão atual do navegador (as pontuações não são gravadas). No celular a lista de casos rola dentro de uma caixa de altura fixa acima do caso aberto. Teclado e leitores de tela não foram testados com tecnologia assistiva.
 
 ## Execução
 ```bash
