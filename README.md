@@ -75,7 +75,10 @@ Categories: 12 normal, 5 ambiguous, 5 unanswerable, 4 out-of-scope, 6 prompt-inj
 
 **Known failures (real):** `n05` "How long does a refund take to arrive?" is refused as no-evidence (vocabulary mismatch with "Processing time"); `x03` "Can I order from a restaurant in another city?" gets an answer although the base does not cover it. Before two general fixes (include a close second passage; require more than 50% of the question's terms in the top source), 30/36 passed and four unanswerable questions got wrong answers.
 
-**Caveat:** the cases were written by the same developer, so scores are optimistic; grounding is high partly by construction because answers are extractive. The LLM path is not evaluated (no API key available).
+**Caveat:** the cases were written by the same developer, so scores are optimistic; grounding is high partly by construction because answers are extractive. The LLM path was never connected or evaluated (unnecessary for the demo).
+
+## LLM integration: possible, not connected
+This is a portfolio demonstration and runs entirely in the labeled demo mode (extractive answers). An optional adapter (`resolveai/llm.py`) could generate answers through any OpenAI-compatible endpoint when `LLM_API_KEY` is set; its reply is discarded unless it cites only the sources it was given. **No real LLM connection was made or tested**, because it was unnecessary for this demo. Tests cover only the no-key path and the rejection of replies that cite unknown sources, and the evaluation numbers below are for demo mode only.
 
 ## Limitations
 Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was checked in Chrome at 1440 and 390 px (screenshots above) and with Streamlit headless tests; no authentication on the review/admin tabs.

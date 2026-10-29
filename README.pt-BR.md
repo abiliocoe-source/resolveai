@@ -75,7 +75,10 @@ LLM opcional: defina `LLM_API_KEY` (e `LLM_BASE_URL`, `LLM_MODEL`) como variáve
 
 **Falhas conhecidas (reais):** `n05` "How long does a refund take to arrive?" é recusada como sem evidência (vocabulário diferente de "Processing time"); `x03` "Can I order from a restaurant in another city?" recebe resposta embora a base não cubra. Antes de duas correções gerais (incluir um segundo trecho próximo; exigir mais de 50% dos termos da pergunta no trecho principal), 30/36 passavam e quatro perguntas sem resposta na base recebiam resposta errada.
 
-**Ressalva:** os casos foram escritos pelo mesmo desenvolvedor, então os números são otimistas; a fundamentação é alta em parte por construção, pois as respostas são extrativas. O caminho com LLM não foi avaliado (sem chave de API).
+**Ressalva:** os casos foram escritos pelo mesmo desenvolvedor, então os números são otimistas; a fundamentação é alta em parte por construção, pois as respostas são extrativas. O caminho com LLM nunca foi conectado nem avaliado (desnecessário para a demo).
+
+## Integração com LLM: possível, não conectada
+Este é um projeto de demonstração de portfólio e roda inteiramente no modo demo identificado (respostas extrativas). Um adaptador opcional (`resolveai/llm.py`) poderia gerar respostas por qualquer endpoint compatível com OpenAI quando `LLM_API_KEY` estiver definida; a resposta é descartada se citar algo além das fontes fornecidas. **Nenhuma conexão real com LLM foi feita ou testada**, porque era desnecessária para esta demo. Os testes cobrem só o caminho sem chave e a rejeição de respostas que citam fontes desconhecidas, e os números da avaliação valem apenas para o modo demo.
 
 ## Limitações
 Recuperação lexical perde paráfrases; mensagens com vários temas são encaminhadas em vez de respondidas; só inglês; a UI foi conferida no Chrome em 1440 e 390 px (capturas acima) e com testes headless do Streamlit; sem autenticação nas abas de revisão/admin.
