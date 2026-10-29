@@ -68,7 +68,7 @@ LLM opcional: defina `LLM_API_KEY` (e `LLM_BASE_URL`, `LLM_MODEL`) como variáve
 **Ressalva:** os casos foram escritos pelo mesmo desenvolvedor, então os números são otimistas; a fundamentação é alta em parte por construção, pois as respostas são extrativas. O caminho com LLM não foi avaliado (sem chave de API).
 
 ## Limitações
-Recuperação lexical perde paráfrases; mensagens com vários temas são encaminhadas em vez de respondidas; só inglês; a UI foi exercitada com o executor headless do Streamlit, mas não inspecionada em navegador; sem autenticação nas abas de revisão/admin.
+Recuperação lexical perde paráfrases; mensagens com vários temas são encaminhadas em vez de respondidas; só inglês; a UI foi conferida no Chrome só em largura de desktop (sem checagem em tela de celular) e com testes headless do Streamlit; sem autenticação nas abas de revisão/admin.
 
 ## Próximos passos
 Recuperação por embeddings comparada neste mesmo conjunto, casos parafraseados por outra pessoa, base em português, autenticação de atendentes.

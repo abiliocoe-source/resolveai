@@ -68,7 +68,7 @@ Categories: 12 normal, 5 ambiguous, 5 unanswerable, 4 out-of-scope, 6 prompt-inj
 **Caveat:** the cases were written by the same developer, so scores are optimistic; grounding is high partly by construction because answers are extractive. The LLM path is not evaluated (no API key available).
 
 ## Limitations
-Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was exercised with Streamlit's headless test runner but not inspected in a browser; no authentication on the review/admin tabs.
+Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was checked in Chrome at desktop width only (no mobile-width check) and with Streamlit headless tests; no authentication on the review/admin tabs.
 
 ## Next steps
 Embedding retrieval compared on this eval set, paraphrased test cases written by someone else, Portuguese knowledge base, agent authentication.
