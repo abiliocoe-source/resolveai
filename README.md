@@ -1,91 +1,110 @@
 # ResolveAI
 
-Customer-support triage agent over a **fictional** knowledge base (FastBox delivery policies, procedures, FAQs). It answers only from cited sources, says when it has no evidence, and routes ambiguous or sensitive cases to a human. Portuguese: [README.pt-BR.md](README.pt-BR.md).
+A support assistant for a delivery company that only answers when it can quote the policy behind the answer. If it can't find one, it says so. If the message looks risky, it hands the case to a person.
 
-## Problem
-Support teams answer the same policy questions all day, but an assistant that invents policies or "approves refunds" is worse than none.
+[![tests](https://github.com/abiliocoe-source/resolveai/actions/workflows/ci.yml/badge.svg)](https://github.com/abiliocoe-source/resolveai/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Solution
-Classify intent -> retrieve policy passages (TF-IDF) -> answer with sentences quoted from the sources and cited as [S1], [S2] -> otherwise state "no evidence" or escalate. Every ticket is logged (masked) with classification and status; agents review the queue; users rate answers; an admin tab shows indicators.
+![Support queue with an answered case and its cited sources](docs/screenshots/queue.jpg)
 
-## Stack and why
-| Tool | Why |
+The company (FastBox), its policies and every ticket in the app are fictional. [Leia em português](README.pt-BR.md).
+
+## Why
+
+Most support questions at a delivery company are the same ten questions about late orders, cancellations and refunds, and the answers are already written down in policy documents. A bot could handle them, but the usual failure mode is a bot that makes up a policy or tells a customer their refund is approved. In support, that's worse than having no bot.
+
+So the goal here was narrow: answer the repetitive questions from the written policy, show exactly where each sentence came from, and get out of the way for everything else.
+
+## What it does
+
+Each message ends up in one of three states:
+
+| Status | When |
 |---|---|
-| scikit-learn TF-IDF | small domain base, deterministic, explainable, no model download; embeddings would add cost without a measured need |
-| Rule-based intents | five fixed intents; easy to test and defend |
-| SQLite (stdlib) | tickets, reviews, ratings without extra services |
-| Streamlit | chat, review queue and admin in one small app (custom visual identity via CSS) |
-| pytest | 24 tests |
+| **Answered** | A policy passage clearly matches. The reply is made of sentences copied from that passage, tagged [S1], [S2]. |
+| **No source found** | Nothing in the knowledge base covers the question well enough. The assistant says it won't guess. |
+| **Passed to an agent** | The message mixes topics, mentions something sensitive (legal threat, allergy, fraud, chargeback) or tries to give the assistant instructions. |
 
-FastAPI was not added: the UI calls the Python modules directly, so an HTTP layer would add nothing yet.
+Before anything is stored, e-mails, phone numbers and card numbers are masked. Agents work through a review queue, customers can rate answers, and a dashboard tracks escalation rate and backlog. The assistant never issues refunds or cancels orders; it explains the policy and says a person does that.
 
-## Architecture
+## How a message is handled
+
 ```mermaid
-flowchart TD
-  M[Customer message: untrusted] --> R[redact PII]
-  R --> G{injection / sensitive / ambiguous?}
-  G -- yes --> E[escalate to human]
-  G -- no --> Q[TF-IDF retrieval + term-coverage check]
-  KB[(kb/*.md: untrusted, injection-like passages dropped)] --> Q
-  Q -- weak --> N[no evidence]
-  Q -- ok --> A[extractive answer with citations]
-  A -. optional .-> L[LLM answer; rejected unless it cites supplied sources]
-  E --> S[(SQLite tickets)]
-  N --> S
-  A --> S
-  S --> UI[Streamlit: chat, history, sources, review, admin]
+flowchart LR
+  M[Message] --> R[Mask personal data]
+  R --> G{Injection, sensitive<br/>or ambiguous?}
+  G -- yes --> E[Pass to an agent]
+  G -- no --> Q[Search the policies]
+  Q -- weak match --> N[No source found]
+  Q -- good match --> A[Answer with citations]
 ```
 
-## Design
-Art direction (taste-skill style `accent-ladder` with the project's own brand kept, applied inside Streamlit): a support queue at a service counter. Every case is a numbered yellow ticket (A-007); the screen is the inbox pattern, with the case list, the open case (question, answer, then the passages behind it) and a details column. The cited sentence is highlighted and carries a match-score chip tied to its source; the full passage opens below it. A quiet strip keeps **Demo mode** visible on every screen. Statuses are words in pale pills (Answered, No source found, Passed to an agent), never colour alone. Type is Atkinson Hyperlegible, with Archivo Black only on the ticket number.
+Retrieval is TF-IDF over sections of the Markdown files in `kb/`. A match has to clear two bars: a minimum similarity score, and more than half of the question's own words have to appear in the top passage. The second check exists because words like "order" and "delivery" appear in every document and would otherwise produce confident answers to questions the base doesn't cover.
 
-| Before | After |
-|---|---|
-| ![before](docs/screenshots/before/desktop-1440-top.jpg) | ![after](docs/screenshots/after/desktop-1440-queue.jpg) |
-| ![before mobile](docs/screenshots/before/mobile-390-top.jpg) | ![after mobile](docs/screenshots/after/mobile-390-queue.jpg) |
+## Evaluation
 
-More: [sources with match scores](docs/screenshots/after/desktop-1440-sources.jpg), [sources on a phone](docs/screenshots/after/mobile-390-sources.jpg). No external images are used, so there is nothing to credit. The sample queue in the screenshots was made by running six questions through the real agent; one of them (A-001, "How long does a refund take?") shows the documented retrieval failure as "No source found".
-Checked with the skill's linter and inspector (0 FAIL, 0 WARN) and by eye in Chrome at 1440 and 390 px. The inspector was run on a copy with longer wait times so Streamlit could finish rendering. Match-score chips exist only for cases asked in the current browser session (the scores are not stored). On a phone the case list scrolls inside a fixed-height box above the open case. Keyboard use and screen readers were not tested with assistive technology.
-
-## Run
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-python -m pytest -q
-python -m resolveai.evaluate   # writes eval/results.json and eval/RESULTS.md
-```
-Optional LLM: set `LLM_API_KEY` (and `LLM_BASE_URL`, `LLM_MODEL`) as environment variables; see `.env.example`. Without a key the app runs in an openly labeled **demo mode**: it does not pretend to be an LLM.
-
-## Security choices
-- Messages and documents are untrusted: injection-like messages are escalated, injection-like KB passages are dropped, all HTML output is escaped, uploads are size-limited and renamed to `[a-z0-9_-]`.
-- LLM instructions live in the system message; question and sources are passed as delimited data. The LLM reply is discarded unless it cites only supplied sources.
-- E-mails, phone and card numbers are masked before storage or any LLM call. Secrets only via environment variables.
-- The agent never performs actions: no refunds, no cancellations.
-
-## Evaluation (36 cases, `eval/cases.json`, demo mode)
-Categories: 12 normal, 5 ambiguous, 5 unanswerable, 4 out-of-scope, 6 prompt-injection, 4 sensitive.
+`eval/cases.json` has 36 cases: 12 ordinary questions, plus ambiguous, unanswerable, out-of-scope, prompt-injection and sensitive messages.
 
 | Metric | Result |
 |---|---|
-| Retrieval hit@3 (normal) | 1.00 (12/12) |
-| Intent accuracy (normal) | 1.00 |
-| Routing accuracy (answer / no evidence / escalate) | 0.944 (34/36) |
-| Grounding (answered normal cases) | 1.00 (quotes verifiable and key fact present) |
-| Source/citation match | 1.00 |
-| Injection resistance | 1.00 (6/6) |
+| Right outcome (answer / no source / pass to agent) | 34 of 36 |
+| Correct document in the top 3 (ordinary questions) | 12 of 12 |
+| Injection attempts that got through | 0 of 6 |
 
-**Known failures (real):** `n05` "How long does a refund take to arrive?" is refused as no-evidence (vocabulary mismatch with "Processing time"); `x03` "Can I order from a restaurant in another city?" gets an answer although the base does not cover it. Before two general fixes (include a close second passage; require more than 50% of the question's terms in the top source), 30/36 passed and four unanswerable questions got wrong answers.
+The two misses are real and stay in the report. "How long does a refund take to arrive?" gets no answer because the policy calls it "Processing time" and the words don't overlap. "Can I order from a restaurant in another city?" gets an answer the base doesn't actually support. I wrote the test cases myself, so treat these numbers as optimistic. Details in [eval/RESULTS.md](eval/RESULTS.md).
 
-**Caveat:** the cases were written by the same developer, so scores are optimistic; grounding is high partly by construction because answers are extractive. The LLM path was never connected or evaluated (unnecessary for the demo).
+## Stack
 
-## LLM integration: possible, not connected
-This is a portfolio demonstration and runs entirely in the labeled demo mode (extractive answers). An optional adapter (`resolveai/llm.py`) could generate answers through any OpenAI-compatible endpoint when `LLM_API_KEY` is set; its reply is discarded unless it cites only the sources it was given. **No real LLM connection was made or tested**, because it was unnecessary for this demo. Tests cover only the no-key path and the rejection of replies that cite unknown sources, and the evaluation numbers below are for demo mode only.
+Python, scikit-learn for TF-IDF, SQLite from the standard library for tickets and reviews, Streamlit for the interface, pytest and GitHub Actions for tests.
+
+I chose TF-IDF over embeddings on purpose. The knowledge base is eight short documents with very specific vocabulary, results are deterministic, and there's no model to download. The refund miss above is the price of that choice, and the obvious next experiment is to run embeddings against the same 36 cases and see if they fix it without breaking anything else.
+
+## Running it
+
+```bash
+git clone https://github.com/abiliocoe-source/resolveai.git
+cd resolveai
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+No API key is needed. A banner at the top of the app says it's in demo mode and that answers are quoted from the policies.
+
+To run the tests and the evaluation:
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest -q
+python -m resolveai.evaluate   # rewrites eval/results.json and eval/RESULTS.md
+```
+
+### Optional: LLM answers
+
+`resolveai/llm.py` can write the answer through any OpenAI-compatible endpoint if `LLM_API_KEY` is set (see `.env.example`). The question and sources go in as delimited data, and the reply is discarded unless it cites only the sources it was given. I never connected this to a real API, so it is tested only for the no-key path and for rejecting bad citations.
+
+## Project layout
+
+```
+resolveai/
+  guard.py      injection, sensitive-topic and personal-data rules
+  intent.py     keyword-based intent (delay, cancellation, refund, incomplete order)
+  kb.py         loads kb/*.md and splits them into passages
+  retrieval.py  TF-IDF index
+  agent.py      ties it together and decides the status
+  store.py      SQLite ticket log
+  evaluate.py   runs eval/cases.json
+kb/             the fictional policies
+app.py, ui.py   Streamlit app
+```
 
 ## Limitations
-Lexical retrieval misses paraphrases; multi-topic messages are escalated rather than answered; English only; the UI was checked in Chrome at 1440 and 390 px (screenshots above) and with Streamlit headless tests; no authentication on the review/admin tabs.
 
-## Next steps
-Embedding retrieval compared on this eval set, paraphrased test cases written by someone else, Portuguese knowledge base, agent authentication.
+Keyword search misses paraphrases. Messages that mix two topics are always escalated instead of split. The knowledge base is English only, and the review and dashboard tabs have no login.
 
-## Demo
-See [DEMO.md](DEMO.md).
+Design notes for the interface are in [docs/DESIGN.md](docs/DESIGN.md), and [DEMO.md](DEMO.md) is a two-minute walkthrough.
+
+## License
+
+[MIT](LICENSE)
