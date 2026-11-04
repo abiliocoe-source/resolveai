@@ -8,7 +8,9 @@ A support assistant for a delivery company that only answers when it can quote t
 
 ![Support queue with an answered case and its cited sources](docs/screenshots/queue.jpg)
 
-The company (FastBox), its policies and every ticket in the app are fictional. [Leia em português](README.pt-BR.md).
+**Live demo:** https://resolveaii.streamlit.app/ · [Leia em português](README.pt-BR.md)
+
+The company (FastBox), its policies and every ticket in the app are fictional.
 
 ## Why
 
