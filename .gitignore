@@ -5,4 +5,4 @@ __pycache__/
 .env
 *.log
 data/*.db
-.taste-skill/
+.streamlit/secrets.toml
