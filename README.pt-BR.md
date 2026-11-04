@@ -8,7 +8,9 @@ Assistente de suporte para uma empresa de delivery que só responde quando conse
 
 ![Fila de suporte com um caso respondido e as fontes citadas](docs/screenshots/queue.jpg)
 
-A empresa (FastBox), as políticas e todos os tickets do app são fictícios. A interface e a base de conhecimento estão em inglês. [Read in English](README.md).
+**Demo:** https://resolveaii.streamlit.app/ · A interface e a base de conhecimento estão em inglês. [Read in English](README.md).
+
+A empresa (FastBox), as políticas e todos os tickets do app são fictícios.
 
 ## Por quê
 
